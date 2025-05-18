@@ -1,0 +1,2284 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+4. Repository files, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+<additional_info>
+
+</additional_info>
+
+</file_summary>
+
+<directory_structure>
+.gitattributes
+Project/backend/.env
+Project/backend/middleware/authMiddleware.js
+Project/backend/models/Researcher.js
+Project/backend/models/Student.js
+Project/backend/package.json
+Project/backend/routes/auth.js
+Project/backend/routes/profile.js
+Project/backend/routes/user.js
+Project/backend/server.js
+Project/backend/utils/auth.js
+Project/backend/utils/upload.js
+Project/frontend/.gitignore
+Project/frontend/package.json
+Project/frontend/public/index.html
+Project/frontend/public/manifest.json
+Project/frontend/public/robots.txt
+Project/frontend/README.md
+Project/frontend/src/api.js
+Project/frontend/src/App.css
+Project/frontend/src/App.js
+Project/frontend/src/App.test.js
+Project/frontend/src/components/AboutPage.js
+Project/frontend/src/components/Footer.css
+Project/frontend/src/components/Footer.js
+Project/frontend/src/components/Hero.css
+Project/frontend/src/components/Hero.js
+Project/frontend/src/components/JournalsPage.js
+Project/frontend/src/components/Login.css
+Project/frontend/src/components/Login.js
+Project/frontend/src/components/Members.css
+Project/frontend/src/components/Members.js
+Project/frontend/src/components/MembersPage.js
+Project/frontend/src/components/Navbar.css
+Project/frontend/src/components/Navbar.js
+Project/frontend/src/components/Profile.css
+Project/frontend/src/components/Profile.js
+Project/frontend/src/components/RegisterResearcher.css
+Project/frontend/src/components/RegisterResearcher.js
+Project/frontend/src/components/RegisterStudent.css
+Project/frontend/src/components/RegisterStudent.js
+Project/frontend/src/components/UniversityPage.js
+Project/frontend/src/index.css
+Project/frontend/src/index.js
+Project/frontend/src/reportWebVitals.js
+Project/frontend/src/setupTests.js
+Project/package.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".gitattributes">
+# Auto detect text files and perform LF normalization
+* text=auto
+</file>
+
+<file path="Project/backend/.env">
+MONGO_URI=mongodb://localhost:27017/Researcher_Hive
+PORT=5000
+JWT_SECRET=your_secret_key
+</file>
+
+<file path="Project/backend/middleware/authMiddleware.js">
+const jwt = require("jsonwebtoken");
+
+const authMiddleware = (req, res, next) => {
+    const token = req.header("Authorization")?.split(" ")[1];  // Extract token
+
+    if (!token) {
+        return res.status(401).json({ error: "Access denied. No token provided." });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;  // Attach user ID to request
+        next();
+    } catch (err) {
+        res.status(400).json({ error: "Invalid token" });
+    }
+};
+
+module.exports = authMiddleware;
+</file>
+
+<file path="Project/backend/models/Researcher.js">
+const mongoose = require('mongoose');
+
+const researcherSchema = new mongoose.Schema({
+    firstName: String,
+    lastName: String,
+    email: { type: String, unique: true },
+    password: String,
+    nationality: String,
+    phone: String,
+    researcherId: String,
+    university: String,
+    registrationNo: String,
+    linkedIn: String,
+    scopusId: String,
+    orcid: String,
+    resume: String,
+    photo: String
+}, { collection: 'researchers' }); // ✅ Explicit collection name
+
+module.exports = mongoose.model('Researcher', researcherSchema);
+</file>
+
+<file path="Project/backend/models/Student.js">
+const mongoose = require('mongoose');
+
+const studentSchema = new mongoose.Schema({
+    firstName: String,
+    lastName: String,
+    email: { type: String, unique: true },
+    password: String,
+    nationality: String,
+    phone: String,
+    university: String,
+    registrationNo: String,
+    resume: String,
+    photo: String
+}, { collection: 'students' }); // ✅ Explicit collection name
+
+module.exports = mongoose.model('Student', studentSchema);
+</file>
+
+<file path="Project/backend/package.json">
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.12.1",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.10.0"
+  }
+}
+</file>
+
+<file path="Project/backend/routes/auth.js">
+const express = require('express');
+const router = express.Router();
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const Student = require('../models/Student');
+const Researcher = require('../models/Researcher');
+const { hashPassword } = require('../utils/auth');
+const upload = require('../utils/upload');
+
+
+// Student Registration (with file uploads)
+router.post('/register-student', upload.fields([{ name: 'resume', maxCount: 1 }, { name: 'photo', maxCount: 1 }]), async (req, res) => {
+    console.log("📥 Received Student Data:", req.body);
+    console.log("📂 Received Files:", req.files);
+
+    if (!req.body.email || !req.body.password) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    try {
+        const { firstName, lastName, email, password, nationality, phone, university, registrationNo } = req.body;
+        const hashedPassword = await hashPassword(password);
+
+        const student = new Student({
+            firstName,
+            lastName,
+            email,
+            password: hashedPassword,
+            nationality,
+            phone,
+            university,
+            registrationNo,
+            resume: req.files?.resume ? req.files.resume[0].path : null,
+            photo: req.files?.photo ? req.files.photo[0].path : null,
+        });
+
+        await student.save();
+        console.log("✅ Student Registered:", student);
+        res.status(201).json({ message: 'Student registered successfully' });
+    } catch (err) {
+        console.error("⚠️ Error Saving Student:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+// Researcher Registration (with file uploads)
+router.post('/register-researcher', upload.fields([{ name: 'resume', maxCount: 1 }, { name: 'photo', maxCount: 1 }]), async (req, res) => {
+    console.log("Received Researcher Data:", req.body);
+    console.log("Received Researcher Files:", req.files);
+    try {
+        const { firstName, lastName, email, password, nationality, phone, researcherId, university, registrationNo, linkedIn, scopusId, orcid } = req.body;
+        const hashedPassword = await hashPassword(password);
+        const researcher = new Researcher({
+            firstName,
+            lastName,
+            email,
+            password: hashedPassword,
+            nationality,
+            phone,
+            researcherId,
+            university,
+            registrationNo,
+            linkedIn,
+            scopusId,
+            orcid,
+            resume: req.files['resume'] ? req.files['resume'][0].path : null,
+            photo: req.files['photo'] ? req.files['photo'][0].path : null,
+        });
+        await researcher.save();
+        res.status(201).json({ message: 'Researcher registered successfully' });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+router.get('/get-user-count', async (req, res) => {
+    try {
+        const studentCount = await Student.countDocuments();
+        const researcherCount = await Researcher.countDocuments();
+        res.json({ count: studentCount + researcherCount });
+    } catch (err) {
+        console.error("Error fetching user count:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.post("/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Check in Students collection
+        let user = await Student.findOne({ email });
+
+        // If not found, check in Researchers collection
+        if (!user) {
+            user = await Researcher.findOne({ email });
+        }
+
+        // If still not found, return error
+        if (!user) {
+            console.log("❌ User not found:", email);
+            return res.status(400).json({ message: "User not found" });
+        }
+
+        console.log("🔑 Stored Hashed Password:", user.password);
+        console.log("📝 Entered Password:", password);
+
+        // Compare passwords
+        const isMatch = await bcrypt.compare(password, user.password);
+        console.log("🔄 Password Match:", isMatch);
+
+        if (!isMatch) {
+            return res.status(400).json({ message: "Wrong credentials" });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+
+        res.json({ token, user });
+    } catch (error) {
+        console.error("⚠️ Server error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+
+
+module.exports = router;
+</file>
+
+<file path="Project/backend/routes/profile.js">
+const express = require("express");
+const router = express.Router();
+const Student = require("../models/Student");  
+const Researcher = require("../models/Researcher");  
+const authMiddleware = require("../middleware/authMiddleware"); 
+
+router.get("/", authMiddleware, async (req, res) => {  // ✅ Ensure correct route path
+  try {
+    let user = await Student.findById(req.user.id).select("-password");
+    if (!user) {
+      user = await Researcher.findById(req.user.id).select("-password");
+    }
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="Project/backend/routes/user.js">
+const express = require('express');
+const router = express.Router();
+const Student = require('../models/Student');
+const Researcher = require('../models/Researcher');
+
+router.get('/get-users', async (req, res) => {
+    try {
+        const students = await Student.find().select('firstName lastName email university photo').lean();
+        const researchers = await Researcher.find().select('firstName lastName email university photo').lean();
+
+        if (!students.length && !researchers.length) {
+            return res.status(404).json({ message: "No users found" });
+        }
+
+        const users = [
+            ...students.map(s => ({
+                id: s._id,
+                name: `${s.firstName} ${s.lastName}`,
+                details: `Student at ${s.university}`,
+                type: 'Student',
+                photo: s.photo ? `/${s.photo}` : '/uploads/default.jpg',
+            })),
+            ...researchers.map(r => ({
+                id: r._id,
+                name: `${r.firstName} ${r.lastName}`,
+                details: `Researcher at ${r.university}`,
+                type: 'Researcher',
+                photo: r.photo ? `/${r.photo}` : '/uploads/default.jpg',
+            }))
+        ];
+
+        res.status(200).json(users);
+    } catch (err) {
+        console.error("Error fetching users:", err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+module.exports = router;
+</file>
+
+<file path="Project/backend/server.js">
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const path = require('path');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // ✅ Parses form data
+
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+const profileRoutes = require("./routes/profile");
+app.use("/profile", profileRoutes);
+
+
+
+console.log("🔑 JWT_SECRET:", process.env.JWT_SECRET);
+
+// MongoDB Connection
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
+.then(() => console.log('Connected to MongoDB'))
+.catch((err) => console.error('MongoDB connection error:', err));
+
+// Routes
+const authRoutes = require('./routes/auth');
+app.use('/auth', authRoutes);
+
+const userRoutes = require('./routes/user');
+app.use('/users', userRoutes);
+
+// Test Route
+app.get('/', (req, res) => {
+    res.send('Backend is running!');
+});
+
+// Error Handling Middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Something went wrong!' });
+});
+
+// Start Server
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+</file>
+
+<file path="Project/backend/utils/auth.js">
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const hashPassword = async (password) => {
+    return await bcrypt.hash(password, 10);
+};
+
+const comparePassword = async (password, hashedPassword) => {
+    return await bcrypt.compare(password, hashedPassword);
+};
+
+const generateToken = (userId) => {
+    return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '1h' });
+};
+
+module.exports = { hashPassword, comparePassword, generateToken };
+</file>
+
+<file path="Project/backend/utils/upload.js">
+const multer = require('multer');
+const path = require('path');
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    },
+});
+
+const upload = multer({ 
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 } // ✅ Limit file size to 5MB
+});
+
+module.exports = upload;
+</file>
+
+<file path="Project/frontend/.gitignore">
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+</file>
+
+<file path="Project/frontend/package.json">
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@tailwindcss/vite": "^4.0.12",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@testing-library/user-event": "^13.5.0",
+    "axios": "^1.8.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.3.0",
+    "react-scripts": "5.0.1",
+    "tailwindcss": "^4.0.12",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "proxy": "http://localhost:5000",
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
+</file>
+
+<file path="Project/frontend/public/index.html">
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>Researcher Hive</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+  </body>
+</html>
+</file>
+
+<file path="Project/frontend/public/manifest.json">
+{
+  "short_name": "React App",
+  "name": "Create React App Sample",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
+</file>
+
+<file path="Project/frontend/public/robots.txt">
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Disallow:
+</file>
+
+<file path="Project/frontend/README.md">
+# Getting Started with Create React App
+
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+## Available Scripts
+
+In the project directory, you can run:
+
+### `npm start`
+
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+
+The page will reload when you make changes.\
+You may also see any lint errors in the console.
+
+### `npm test`
+
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+
+### `npm run build`
+
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
+
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
+
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+
+### `npm run eject`
+
+**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+
+If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+
+You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+
+## Learn More
+
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+
+To learn React, check out the [React documentation](https://reactjs.org/).
+
+### Code Splitting
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+
+### Analyzing the Bundle Size
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+
+### Making a Progressive Web App
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+
+### Advanced Configuration
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+
+### Deployment
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+
+### `npm run build` fails to minify
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+</file>
+
+<file path="Project/frontend/src/api.js">
+import axios from 'axios';
+
+// Create an instance of axios with the base URL of your backend
+const API = axios.create({ baseURL: 'http://localhost:5000' });
+
+// Student Registration
+export const registerStudent = (formData) => API.post('/auth/register-student', formData);
+
+// Researcher Registration
+export const registerResearcher = (formData) => API.post('/auth/register-researcher', formData);
+
+export const getUsers = () => API.get('/users/get-users');
+</file>
+
+<file path="Project/frontend/src/App.css">
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Ensure full height layout */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Main content should expand to push the footer down */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+</file>
+
+<file path="Project/frontend/src/App.js">
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Hero from './components/Hero';
+import Members from './components/Members';
+import Login from './components/Login';
+import RegisterResearcher from './components/RegisterResearcher';
+import RegisterStudent from './components/RegisterStudent';
+import Footer from './components/Footer';
+import MembersPage from './components/MembersPage';
+import UniversityPage from './components/UniversityPage';
+import JournalsPage from './components/JournalsPage';
+import AboutPage from "./components/AboutPage";
+import Profile from "./components/Profile";
+import './App.css';
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        {/* Home page with Navbar and Footer */}
+        <Route  path="/"  element={
+            <>
+              <Navbar />
+              <div className="main-content">
+                <Hero />
+                <Members />
+              </div>
+              <Footer />
+            </>
+          } 
+        />
+        
+        {/* Other pages without Navbar and Footer */}
+        <Route path="/register-researcher" element={<RegisterResearcher />} />
+        <Route path="/register-student" element={<RegisterStudent />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/members" element={<MembersPage />} />
+        <Route path="/university" element={<UniversityPage />} />
+        <Route path="/journals" element={<JournalsPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/profile" element={<Profile />} /> 
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
+</file>
+
+<file path="Project/frontend/src/App.test.js">
+import { render, screen } from '@testing-library/react';
+import App from './App';
+
+test('renders learn react link', () => {
+  render(<App />);
+  const linkElement = screen.getByText(/learn react/i);
+  expect(linkElement).toBeInTheDocument();
+});
+</file>
+
+<file path="Project/frontend/src/components/AboutPage.js">
+import React from "react";
+
+const AboutPage = () => {
+  return (
+    <div style={{ padding: "20px" }}>
+      <h1>About Us</h1>
+      <p>Welcome to our research platform. Here, researchers and students collaborate to share knowledge.</p>
+    </div>
+  );
+};
+
+export default AboutPage;
+</file>
+
+<file path="Project/frontend/src/components/Footer.css">
+.footer {
+    background-color: #002366;
+    /* Navy Blue */
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    width: auto;
+    position: relative;
+    
+}
+.footer p {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.join-button {
+    background-color: #ff6b6b;
+    /* Red */
+    color: white;
+    padding: 0.8rem 2rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.join-button:hover {
+    background-color: #e65a5a;
+    /* Darker Red */
+}
+</file>
+
+<file path="Project/frontend/src/components/Footer.js">
+import React from 'react';
+import './Footer.css';
+
+const Footer = () => {
+  return (
+    <footer className="footer">
+      <p>Join Researcher Hive to connect, collaborate, and showcase your innovations—where ideas meet opportunity!</p>
+      <button className="join-button">Join Us Now</button>
+    </footer>
+  );
+};
+
+export default Footer;
+</file>
+
+<file path="Project/frontend/src/components/Hero.css">
+.hero {
+        background: url('../Assets/background.jpg') no-repeat center center/cover;
+            /* Ensure the background covers the section */
+            height: 670px;
+            /* Make it full screen */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            text-align: left;
+            color: white;
+            /* Ensure text is visible */
+            padding: 4rem 2rem;
+            position: relative;
+            padding-left: 5%;
+}
+
+
+
+.hero-content {
+    position: relative;
+        z-index: 2;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.hero h1 {
+    font-size: 2.5rem;
+    color: #163172;
+    /* Navy Blue */
+}
+
+.hero p {
+    font-size: 1.2rem;
+    color: #163172;
+    margin: 1rem 0;
+}
+
+.member-count {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #22D3EE;
+    /* Cyan to match your theme */
+    margin-top: 1rem;
+}
+</file>
+
+<file path="Project/frontend/src/components/Hero.js">
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import './Hero.css';
+
+const Hero = () => {
+
+   const [memberCount, setMemberCount] = useState(0); // ✅ Define state properly
+
+  useEffect(() => {
+    axios.get('http://localhost:5000/auth/get-user-count') // ✅ Correct API endpoint
+      .then(response => {
+        console.log("Member Count API Response:", response.data); // Debugging log
+        setMemberCount(response.data.count);
+      })
+      .catch(error => console.error('Error fetching member count:', error));
+  }, []);
+  return (
+    <div className="hero">
+      <h1>Welcome to Researcher Hive</h1>
+      <p>Connect, collaborate, and grow with researchers worldwide.</p>
+       <p className="member-count">Registered Members: {memberCount}</p>
+    </div>
+  );
+};
+
+export default Hero;
+</file>
+
+<file path="Project/frontend/src/components/JournalsPage.js">
+import React from 'react';
+
+const JournalsPage = () => {
+  return (
+    <div>
+      <h1>Journals Page</h1>
+      <p>This page will display journals.</p>
+    </div>
+  );
+};
+
+export default JournalsPage;
+</file>
+
+<file path="Project/frontend/src/components/Login.css">
+/* Background */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: white;
+}
+
+/* Login Box */
+.login-box {
+    background: #d1d5db;
+    /* Light Gray */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    width: 400px;
+}
+
+/* Logo Text */
+.logo-text {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.blue {
+    color: #1E3A8A;
+    /* Deep Blue */
+}
+
+
+
+/* Input Fields */
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+/* Buttons Container */
+.button-container {
+    display: flex;
+    justify-content: space-between;
+    /* Adds space between buttons */
+    gap: 15px;
+    /* Additional spacing */
+    margin-top: 15px;
+}
+
+/* Login & Home Buttons */
+.login-button1,
+.home-button {
+    flex: 1;
+    /* Ensures equal button width */
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1rem;
+    min-width: 100px;
+    text-align: center;
+}
+
+/* Login Button */
+.login-button1 {
+    background-color: #ff6b6b;
+    /* Red */
+    color: white;
+}
+
+.login-button1:hover {
+    background-color: #e55a5a;
+}
+
+/* Home Button */
+.home-button {
+    background-color: #6B7280;
+    /* Gray */
+    color: white;
+}
+
+.home-button:hover {
+    background-color: #4B5563;
+}
+</file>
+
+<file path="Project/frontend/src/components/Login.js">
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./Login.css";
+import logo1 from "../Assets/logo1.jpg";
+
+const Login = () => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = async(e) => {
+    e.preventDefault();
+     try {
+      // Simulating an API call
+      const response = await fetch("http://localhost:5000/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem("token", data.token); // Save token for authentication
+        navigate("/profile"); // Redirect to the profile page
+      } else {
+        alert("Invalid credentials. Please try again.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Something went wrong. Please try again later.");
+    }
+  };
+
+  return (
+    <div className="login-container">
+          <div className="login-box">
+             {/* Logo */}
+                <img src={logo1} alt="Logo1" className="logo1" />
+
+        <h2 className="logo-text">
+          <span className="blue">Researcher</span> <span className="blue">Hive</span>
+        </h2>
+
+        <form onSubmit={handleSubmit}>
+          <input type="email" name="email" placeholder="Email" onChange={handleChange} required />
+          <input type="password" name="password" placeholder="Password" onChange={handleChange} required />
+
+          {/* Buttons Container */}
+          <div className="button-container">
+            <button type="submit" className="login-button1">Log In</button>
+            <button type="button" className="home-button" onClick={() => navigate("/")}>Home</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
+</file>
+
+<file path="Project/frontend/src/components/Members.css">
+.members {
+    text-align: center;
+    padding: 30px;
+    color: #163172;
+}
+
+.member-list {
+    display: flex;
+    flex-wrap: wrap;
+    /* ✅ Allows wrapping to the next line */
+    justify-content: center;
+    /* ✅ Centers items horizontally */
+    gap: 20px;
+    /* ✅ Space between items */
+    min-height: 80px;
+        /* Ensure enough space */
+        padding-bottom: 20px;
+        /* Add space at the bottom */
+}
+
+.member-card {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 250px;
+    /* ✅ Set a fixed width */
+}
+
+.member-photo {
+    width: 80px;
+    /* ✅ Set image size */
+    height: 80px;
+    border-radius: 50%;
+    /* ✅ Circular images */
+}
+
+.badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    color: white;
+}
+
+.student {
+    background-color: #dc3545;
+}
+
+.researcher {
+    background-color: #28a745;
+}
+
+.see-more-container {
+    display: flex;
+    justify-content: center;
+    /* Center horizontally */
+    margin-top: 30px;
+    /* Adjust spacing */
+}
+
+.see-more-button {
+    padding: 10px 20px;
+    background-color: #1E3A8A;
+    /* Deep Blue */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    text-align: center;
+}
+
+.see-more-button:hover {
+    background-color: #163172;
+    /* Darker shade of blue */
+}
+</file>
+
+<file path="Project/frontend/src/components/Members.js">
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import './Members.css';
+
+const Members = () => {
+  const [members, setMembers] = useState([]);
+
+  useEffect(() => {
+    axios.get('http://localhost:5000/users/get-users')
+      .then(response => {
+        console.log("API Response:", response.data); // ✅ Log the API response
+        setMembers(response.data);
+      })
+      .catch(error => console.error('Error fetching members:', error));
+  }, []);
+
+  return (
+    <section className="members">
+      <h2>Recently Registered Members</h2>
+      <div className="member-list">
+        {members.length === 0 ? (
+          <p>No members found.</p>  // ✅ Display message if empty
+        ) : (
+          members.map((member) => (
+            <div key={member.id} className="member-card">
+              {member.photo && <img src={`http://localhost:5000${member.photo}`} alt={member.name} className="member-photo" />
+}
+              <h3>{member.name}</h3>
+              <p>{member.details}</p>
+              <span className={`badge ${member.type.toLowerCase()}`}>{member.type}</span>
+            </div>
+          ))
+        )}
+      </div>
+      <button className="see-more-button">See More</button>
+    </section>
+  );
+};
+
+export default Members;
+</file>
+
+<file path="Project/frontend/src/components/MembersPage.js">
+import React from 'react';
+
+const MembersPage = () => {
+  return (
+    <div>
+      <h1>Members Page</h1>
+      <p>This page will display registered members.</p>
+    </div>
+  );
+};
+
+export default MembersPage;
+</file>
+
+<file path="Project/frontend/src/components/Navbar.css">
+/* Navbar.css */
+
+.navbar {
+    background-color: #002366;
+    
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 10px;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.logo-image {
+    width: 90px;
+    height: 50px;
+    margin-right: 10px;
+    
+}
+
+.nav-center .nav-links,
+.nav-right .nav-links {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 0;
+    margin: 0;
+}
+
+.nav-links li {
+    position: relative;
+    list-style: none;
+}
+
+.nav-links a,
+.register-button {
+    color: white;
+    text-decoration: none;
+    font-size: 1rem;
+    padding: 8px 15px;
+    transition: 0.3s ease-in-out;
+    font-weight: bold;
+}
+
+.nav-links a:hover,
+.register-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: white;
+    min-width: 180px;
+    padding: 10px 0;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease-in-out;
+    z-index: 1000;
+}
+
+.dropdown:hover .dropdown-menu,
+.register-button:focus+.dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+}
+
+.dropdown-menu a {
+    color: #002366;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 10px 15px;
+    text-decoration: none;
+    display: block;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.dropdown-menu a:hover {
+    background-color: #f0f0f0;
+    border-radius: 3px;
+}
+
+/* Login Button */
+.login-button {
+    background-color: red;
+    color: white !important;
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.login-button:hover {
+    background-color: #cc0000;
+}
+
+/* Register Button */
+.register-button {
+    background-color: red;
+    color: white !important;
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: 0.3s;
+    border: none;
+    cursor: pointer;
+}
+
+.register-button:hover {
+    background-color: #cc0000;
+}
+</file>
+
+<file path="Project/frontend/src/components/Navbar.js">
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom'; 
+import './Navbar.css';
+import logo from '../Assets/logo1.jpg';
+
+const Navbar = () => {
+  const [isBrowseDropdownOpen, setIsBrowseDropdownOpen] = useState(false);
+  const [isRegisterDropdownOpen, setIsRegisterDropdownOpen] = useState(false);
+
+  return (
+    <nav className="navbar">
+      <div className="logo">
+        <img src={logo} alt="Researcher Hive Logo" className="logo-image" />
+        <span>Researcher Hive</span>
+      </div>
+      <div className="nav-center">
+        <ul className="nav-links">
+          <li><Link to="/">HOME</Link></li>
+
+          {/* Browse Dropdown */}
+          <li 
+            className="dropdown"
+            onMouseEnter={() => setIsBrowseDropdownOpen(true)}
+            onMouseLeave={() => setIsBrowseDropdownOpen(false)}
+          >
+            <span className="dropdown-btn">BROWSE</span>
+            {isBrowseDropdownOpen && (
+              <ul className="dropdown-menu">
+                <li><Link to="/members">Members</Link></li>
+                <li><Link to="/university">University</Link></li>
+                <li><Link to="/journals">Journals</Link></li>
+              </ul>
+            )}
+          </li>
+
+          <li><Link to="/about">ABOUT</Link></li>
+        </ul>
+      </div>
+
+      <div className="nav-right">
+        <ul className="nav-links">
+          {/* Register Dropdown */}
+          <li>
+            <div className="dropdown">
+              <button 
+                className="register-button" 
+                onClick={() => setIsRegisterDropdownOpen(!isRegisterDropdownOpen)}
+              >
+                REGISTER
+              </button>
+              {isRegisterDropdownOpen && (
+                <div className="dropdown-menu">
+                  <Link to="/register-researcher" className="dropdown-item">As Researcher</Link>
+                  <Link to="/register-student" className="dropdown-item">As Student</Link>
+                </div>
+              )}
+            </div>
+          </li>
+          
+          <li><Link to="/login" className="login-button">LOGIN</Link></li>
+        </ul>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;
+</file>
+
+<file path="Project/frontend/src/components/Profile.css">
+/* Profile Page Styling */
+.profile-page {
+    font-family: Arial, sans-serif;
+}
+
+/* 🔹 Profile Navbar */
+.profile-navbar {
+    background-color: #1E3A8A;
+    /* Deep Blue */
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    height: 65px;
+}
+
+/* 🔹 Profile Info */
+.profile-info {
+    display: flex;
+    align-items: center;
+}
+
+/* 🔹 Profile Picture (Increased Size) */
+.profile-pic {
+    width: 60px;
+    /* Increased width */
+    height: 60px;
+    /* Increased height */
+    border-radius: 50%;
+    margin-right: 15px;
+    border: 3px solid white;
+    /* Thicker border for better visibility */
+}
+
+.profile-name {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+/* 🔹 Navbar Buttons */
+.nav-buttons {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    position: relative;
+    top: -3px;
+    /* Moves buttons slightly up */
+}
+
+/* Buttons */
+.nav-btn {
+    background-color: red;
+    /* Cyan */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    /* Increased size */
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 16px;
+    /* Bigger font */
+    font-weight: bold;
+    /* Bolder text */
+    transition: 0.3s;
+}
+
+.logout-btn {
+    background-color: red;
+    color: white;
+    font-weight: bold;
+}
+
+.nav-btn:hover {
+    opacity: 0.8;
+}
+
+/* 🔹 Profile Content */
+.profile-content {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* 🔹 Bigger Profile Picture on Profile Page */
+.profile-content .profile-pic {
+    width: 120px;
+    /* Bigger profile picture */
+    height: 120px;
+    border: 4px solid #1E3A8A;
+    /* Deep Blue border */
+    margin-bottom: 15px;
+}
+
+.profile-content h2 {
+    color: #1E3A8A;
+    /* Deep Blue */
+}
+
+.profile-content p {
+    font-size: 16px;
+    margin: 5px 0;
+}
+</file>
+
+<file path="Project/frontend/src/components/Profile.js">
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import "./Profile.css";
+
+const Profile = () => {
+  const [user, setUser] = useState(null);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem("token");  
+      if (!token) {
+        setError("No token found. Please log in.");
+        return;
+      }
+
+      try {
+        const response = await axios.get("http://localhost:5000/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setUser(response.data);
+      } catch (err) {
+        setError("Failed to fetch profile.");
+        console.error("Error fetching profile:", err.response?.data || err);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  //  Logout Function
+  const handleLogout = () => {
+    localStorage.removeItem("token");  // Remove Token
+    navigate("/");  // Redirect to Home Page
+  };
+
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
+  if (!user) return <p>Loading profile...</p>;
+
+  return (
+    <div className="profile-page">
+      {/*  Navbar for Profile Page */}
+      <nav className="profile-navbar">
+        <div className="profile-info">
+          <img src={`http://localhost:5000/${user.photo}`} alt="Profile" className="profile-pic" />
+          <span className="profile-name">{user.firstName} {user.lastName}</span>
+        </div>
+        <div className="nav-buttons">
+          <button onClick={() => navigate("/")} className="nav-btn"> Home</button>
+          <button onClick={handleLogout} className="nav-btn logout-btn"> Logout</button>
+        </div>
+      </nav>
+
+      {/*  Profile Details */}
+      <div className="profile-content">
+        <h2>Welcome, {user.firstName} {user.lastName}</h2>
+        <p><strong>Email:</strong> {user.email}</p>
+        <p><strong>University:</strong> {user.university}</p>
+        <p><strong>Phone:</strong> {user.phone}</p>
+      </div>
+    </div>
+  );
+};
+
+export default Profile;
+</file>
+
+<file path="Project/frontend/src/components/RegisterResearcher.css">
+/* Full Page Centering */
+.register-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: white;
+}
+
+/* Registration Box */
+.register-box {
+    background: #d1d5db;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 600px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    position: relative;
+}
+
+/* Logo */
+.logo1 {
+    width: 100px;
+    height: auto;
+    margin-bottom: 0.5rem;
+}
+
+/* Navigation Buttons */
+.nav-buttons {
+    position: absolute;
+    top: 40px;
+    right: 20px;
+}
+
+.nav-button {
+    background-color: #1E3A8A;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    margin-left: 0.5rem;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.nav-button:hover {
+    background-color: #153070;
+}
+
+/* Title */
+.title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #1E3A8A;
+    margin-bottom: 1rem;
+}
+
+/* Form */
+/*.registration-form {
+    display: flex;
+    flex-direction: column;
+}*/
+
+.registration-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    /* Adds space between form fields */
+}
+
+/* Container for each row */
+.form-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12.7px;
+    /* Half-inch space between two input fields */
+    /*margin-bottom: 15px;
+    /* Space between each row */
+}
+
+/* Styling for input fields */
+.form-row input {
+    width: 100%;
+    /* Ensures input boxes are evenly distributed */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+/* Two fields per row */
+.form-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.2rem;
+}
+
+/* Each input takes 48% to fit two in one row */
+.form-row input,
+.form-row select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Full-width input for fields like File Upload */
+.full-width {
+    width: 100%;
+}
+
+/* Submit Button */
+.submit-button {
+    background-color: #1E3A8A;
+    color: white;
+    border: none;
+    padding: 0.7rem;
+    width: 100%;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.submit-button:hover {
+    background-color: #1E3A8A;
+}
+</file>
+
+<file path="Project/frontend/src/components/RegisterResearcher.js">
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios"; // Import axios for API calls
+import "./RegisterResearcher.css";
+import logo1 from "../Assets/logo1.jpg";
+
+const RegisterResearcher = () => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    nationality: "",
+    phone: "",
+    researcherId: "",
+    linkedIn: "",
+    scopusId: "",
+    orcid: "",
+    universityName: "",
+    registrationNo: "",
+    password: "",
+    confirmPassword: "",
+    resume: null,
+    photo: null,
+  });
+
+  
+
+
+  // Handle input changes
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  // Handle file inputs separately
+  const handleFileChange = (e) => {
+    const { name, files } = e.target;
+    setFormData({ ...formData, [name]: files[0] });
+  };
+
+  // Submit form data
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  
+  if (formData.password !== formData.confirmPassword) {
+    alert("Passwords do not match!");
+    return;
+  }
+
+  const submitData = new FormData();
+  for (const key in formData) {
+    submitData.append(key, formData[key]);
+  }
+
+  try {
+    const response = await axios.post(
+      "http://localhost:5000/auth/register-researcher",
+      submitData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+
+    if (response.status === 201) {
+      alert("Registration successful!");
+      navigate("/login");
+    } else {
+      alert("Registration failed. Please try again.");
+    }
+  } catch (error) {
+    console.error("Registration Error:", error.response?.data || error);
+    alert("An error occurred during registration.");
+  }
+};
+
+
+  return (
+    <div className="register-container">
+      <div className="register-box">
+        {/* Home & Login Buttons */}
+        <div className="nav-buttons">
+          <button onClick={() => navigate("/")} className="nav-button">
+            Home
+          </button>
+          <button onClick={() => navigate("/login")} className="nav-button">
+            Login
+          </button>
+        </div>
+
+        {/* Logo */}
+        <img src={logo1} alt="Logo1" className="logo1" />
+        <h2 className="title">Register as a Researcher</h2>
+
+        {/* Registration Form */}
+        <form className="registration-form" onSubmit={handleSubmit}>
+          <div className="form-row">
+            <input type="text" name="firstName" placeholder="First Name" required onChange={handleChange} />
+            <input type="text" name="lastName" placeholder="Last Name" required onChange={handleChange} />
+          </div>
+          <div className="form-row">
+            <input type="email" name="email" placeholder="Email" required onChange={handleChange} />
+            <input type="text" name="nationality" placeholder="Nationality" required onChange={handleChange} />
+          </div>
+
+    
+
+          <div className="form-row">
+            <input type="tel" name="phone" placeholder="Phone No." required onChange={handleChange} />
+            
+            <input type="text" name="researcherId" placeholder="Researcher ID" onChange={handleChange} />
+          </div>
+       
+          <div className="form-row">
+            <input type="url" name="linkedIn" placeholder="LinkedIn" onChange={handleChange} />
+            <input type="text" name="scopusId" placeholder="Scopus ID" onChange={handleChange} />
+          </div>
+          <div className="form-row">
+            <input type="text" name="orcid" placeholder="ORCID" onChange={handleChange} />
+            <input type="text" name="university" placeholder="University Name" required onChange={handleChange} />
+          </div>
+          <div className="form-row">
+            <input type="text" name="registrationNo" placeholder="Registration No." required onChange={handleChange} />
+          </div>
+
+          <div className="form-row">
+            <span className="file-text">Resume:</span>
+            <input type="file" name="resume" accept=".pdf,.doc,.docx" className="full-width" onChange={handleFileChange} />
+          </div>
+          <div className="form-row">
+            <span className="file-text">Photo:</span>
+            <input type="file" name="photo" accept="image/*" className="full-width" onChange={handleFileChange} />
+          </div>
+
+          <div className="form-row">
+            <input type="password" name="password" placeholder="Password" required onChange={handleChange} />
+            <input type="password" name="confirmPassword" placeholder="Confirm Password" required onChange={handleChange} />
+          </div>
+
+          <button type="submit" className="submit-button">
+            Create Profile
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default RegisterResearcher;
+</file>
+
+<file path="Project/frontend/src/components/RegisterStudent.css">
+/* Container for the entire form section */
+.register-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: white;
+    /* Light gray background */
+    padding: 1rem;
+}
+
+/* Styling for the form box */
+.register-box {
+    background-color: #d1d5db;
+    /* White background */
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    /* Subtle shadow */
+    width: 100%;
+    max-width: 500px;
+    /* Limits the width on larger screens */
+}
+
+/* Centering the logo */
+.logo1 {
+    display: block;
+    margin: 0 auto 1rem auto;
+    width: 120px;
+    /* Adjust size as needed */
+}
+
+/* Styling for the title */
+.title {
+    text-align: center;
+    font-size: 1.75rem;
+    color: #1E3A8A;;
+    /* Darker shade for text */
+    margin-bottom: 1.5rem;
+}
+
+/* Form layout */
+.registration-form {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Each form group (label + input) */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+/* Styling for labels */
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #2d3748;
+    /* Dark gray for labels */
+    font-weight: 500;
+}
+
+/* Styling for inputs */
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #cbd5e0;
+    /* Light gray border */
+    border-radius: 4px;
+    font-size: 1rem;
+    color: #2d3748;
+    /* Dark gray text */
+    background-color: #edf2f7;
+    /* Slightly off-white background */
+}
+
+/* Styling for the submit button */
+.submit-button {
+    background-color: #3182ce;
+    /* Blue background */
+    color: #ffffff;
+    /* White text */
+    border: none;
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+/* Hover effect for the submit button */
+.submit-button:hover {
+    background-color: #2b6cb0;
+    /* Darker blue */
+}
+</file>
+
+<file path="Project/frontend/src/components/RegisterStudent.js">
+import React, { useState } from "react";
+import axios from "axios"; // Import Axios
+import { useNavigate } from "react-router-dom";
+import "./RegisterStudent.css";
+import logo1 from "../Assets/logo1.jpg";
+
+const RegisterStudent = () => {
+  const navigate = useNavigate();
+
+  // State for form inputs
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    nationality: "",
+    phone: "",
+    university: "",
+    registrationNo: "",
+    password: "",
+    confirmPassword: "",
+    resume: null,
+    photo: null,
+  });
+
+  // Handle text input changes
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // Handle file uploads
+  const handleFileChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.files[0] });
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Check password confirmation
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+    }
+
+    const submissionData = new FormData();
+    Object.keys(formData).forEach((key) => {
+      submissionData.append(key, formData[key]);
+    });
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/auth/register-student",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      if (response.status === 201) {
+        alert("Registration Successful!");
+        navigate("/login");
+      } else {
+        alert(response.data.error || "Registration Failed!");
+      }
+    } catch (error) {
+      console.error("Error registering:", error.response?.data || error);
+      alert("An error occurred!");
+    }
+  };
+
+  return (
+    <div className="register-container">
+      <div className="register-box">
+        <div className="nav-buttons">
+          <button onClick={() => navigate("/")} className="nav-button">Home</button>
+          <button onClick={() => navigate("/login")} className="nav-button">Login</button>
+        </div>
+
+        <img src={logo1} alt="Logo1" className="logo1" />
+        <h2 className="title">Register as a Student</h2>
+
+        <form className="registration-form" onSubmit={handleSubmit}>
+          <div className="form-row">
+            <input type="text" name="firstName" placeholder="First Name" required onChange={handleChange} />
+            <input type="text" name="lastName" placeholder="Last Name" required onChange={handleChange} />
+          </div>
+          <div className="form-row">
+            <input type="email" name="email" placeholder="Email" required onChange={handleChange} />
+            <input type="text" name="nationality" placeholder="Nationality" required onChange={handleChange} />
+          </div>
+          <div className="form-row">
+            <input type="tel" name="phone" placeholder="Phone No." required onChange={handleChange} />
+            <input type="text" name="university" placeholder="University Name" required onChange={handleChange} />
+          </div>
+          <div className="form-row">
+            <input type="text" name="registrationNo" placeholder="Registration No." required onChange={handleChange} />
+          </div>
+
+          <div className="form-row">
+            <span className="file-text">Resume:</span>
+            <input type="file" name="resume" accept=".pdf,.doc,.docx" className="full-width" onChange={handleFileChange} />
+          </div>
+          <div className="form-row">
+            <span className="file-text">Photo:</span>
+            <input type="file" name="photo" accept="image/*" className="full-width" onChange={handleFileChange} />
+          </div>
+          <div className="form-row">
+            <input type="password" name="password" placeholder="Password" required onChange={handleChange} />
+            <input type="password" name="confirmPassword" placeholder="Confirm Password" required onChange={handleChange} />
+          </div>
+
+          <button type="submit" className="submit-button">Create Profile</button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default RegisterStudent;
+</file>
+
+<file path="Project/frontend/src/components/UniversityPage.js">
+import React from 'react';
+
+const UniversityPage = () => {
+  return (
+    <div>
+      <h1>University Page</h1>
+      <p>This page will display universities.</p>
+    </div>
+  );
+};
+
+export default UniversityPage;
+</file>
+
+<file path="Project/frontend/src/index.css">
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+</file>
+
+<file path="Project/frontend/src/index.js">
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+//import { BrowserRouter } from 'react-router-dom'; // Import BrowserRouter
+import './index.css';
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+      <App />
+  </React.StrictMode>
+);
+
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
+</file>
+
+<file path="Project/frontend/src/reportWebVitals.js">
+const reportWebVitals = onPerfEntry => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
+
+export default reportWebVitals;
+</file>
+
+<file path="Project/frontend/src/setupTests.js">
+// jest-dom adds custom jest matchers for asserting on DOM nodes.
+// allows you to do things like:
+// expect(element).toHaveTextContent(/react/i)
+// learn more: https://github.com/testing-library/jest-dom
+import '@testing-library/jest-dom';
+</file>
+
+<file path="Project/package.json">
+{
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "mongoose": "^8.12.1",
+    "multer": "^1.4.5-lts.1"
+  }
+}
+</file>
+
+</files>
